@@ -20,7 +20,22 @@ struct LayoutPickerView: View {
                     .foregroundStyle(TileTermTheme.labelSecondary)
             }
 
-            if viewModel.availableLayouts.isEmpty {
+            if !AccessibilityService.isTrusted {
+                VStack(spacing: 8) {
+                    Text("Accessibility access required")
+                        .font(.subheadline)
+                    Text("Grant access in System Settings > Privacy & Security > Accessibility")
+                        .font(.caption)
+                        .foregroundStyle(TileTermTheme.labelSecondary)
+                        .multilineTextAlignment(.center)
+                    Button("Open System Settings") {
+                        AccessibilityService.promptIfNeeded()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+                .padding(.vertical, 12)
+            } else if viewModel.availableLayouts.isEmpty {
                 Text("No terminal windows found")
                     .font(.subheadline)
                     .foregroundStyle(TileTermTheme.labelSecondary)
