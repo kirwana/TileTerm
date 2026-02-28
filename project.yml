@@ -1,0 +1,30 @@
+name: TileTerm
+options:
+  bundleIdPrefix: com.kirwana
+  deploymentTarget:
+    macOS: "15.0"
+  xcodeVersion: "16.0"
+  minimumXcodeGenVersion: "2.0"
+settings:
+  SWIFT_VERSION: "6.0"
+  MACOSX_DEPLOYMENT_TARGET: "15.0"
+targets:
+  TileTerm:
+    type: application
+    platform: macOS
+    sources:
+      - TileTerm
+    info:
+      path: TileTerm/Info.plist
+      properties:
+        LSUIElement: true
+        NSAccessibilityUsageDescription: "TileTerm needs accessibility access to detect and arrange your terminal windows."
+    entitlements:
+      path: TileTerm/TileTerm.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+    settings:
+      INFOPLIST_FILE: TileTerm/Info.plist
+      CODE_SIGN_ENTITLEMENTS: TileTerm/TileTerm.entitlements
+      PRODUCT_BUNDLE_IDENTIFIER: com.kirwana.tileterm
+      ENABLE_HARDENED_RUNTIME: true
