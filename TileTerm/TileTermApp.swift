@@ -1,4 +1,5 @@
 import SwiftUI
+import Carbon
 
 @main
 struct TileTermApp: App {
@@ -30,25 +31,62 @@ struct TileTermApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let pickerController = PickerPanelController()
-    private var globalMonitor: Any?
+    private var hotKeyRef: EventHotKeyRef?
     private var settingsWindow: NSWindow?
+
+    private static var sharedInstance: AppDelegate?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AccessibilityService.promptIfNeeded()
-
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            if event.keyCode == 17 && flags == [.control, .option] {
-                Task { @MainActor in
-                    self?.pickerController.toggle()
-                }
-            }
-        }
+        AppDelegate.sharedInstance = self
+        registerHotKey()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        if let monitor = globalMonitor {
-            NSEvent.removeMonitor(monitor)
+        if let hotKeyRef {
+            UnregisterEventHotKey(hotKeyRef)
+        }
+    }
+
+    private func registerHotKey() {
+        // Install Carbon event handler for hot key
+        var eventType = EventTypeSpec(
+            eventClass: OSType(kEventClassKeyboard),
+            eventKind: UInt32(kEventHotKeyPressed)
+        )
+
+        InstallEventHandler(
+            GetApplicationEventTarget(),
+            { _, event, _ -> OSStatus in
+                Task { @MainActor in
+                    AppDelegate.sharedInstance?.pickerController.toggle()
+                }
+                return noErr
+            },
+            1,
+            &eventType,
+            nil,
+            nil
+        )
+
+        // Register Ctrl+Opt+T
+        // Carbon modifier flags: controlKey = 0x1000, optionKey = 0x0800
+        // Carbon keycode for T = 17
+        let hotKeyID = EventHotKeyID(signature: fourCharCode("TILE"), id: 1)
+        var ref: EventHotKeyRef?
+        let modifiers: UInt32 = UInt32(controlKey | optionKey)
+
+        let status = RegisterEventHotKey(
+            17, // T key
+            modifiers,
+            hotKeyID,
+            GetApplicationEventTarget(),
+            0,
+            &ref
+        )
+
+        if status == noErr {
+            hotKeyRef = ref
         }
     }
 
@@ -77,4 +115,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         self.settingsWindow = window
     }
+}
+
+private func fourCharCode(_ string: String) -> OSType {
+    var result: OSType = 0
+    for char in string.utf8.prefix(4) {
+        result = (result << 8) | OSType(char)
+    }
+    return result
 }
