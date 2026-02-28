@@ -14,9 +14,17 @@ enum TilingEngine {
             AccessibilityService.moveWindow(window, to: frames[index])
         }
 
-        // Raise the first window to front
-        if let first = windows.first {
-            AccessibilityService.raiseWindow(first)
+        // Raise all windows (last-to-first so the first window ends up on top)
+        for window in windows.reversed() {
+            AccessibilityService.raiseWindow(window)
+        }
+
+        // Activate the owning apps so all tiled windows are visible
+        let pids = Set(windows.map(\.ownerPID))
+        for pid in pids {
+            if let app = NSRunningApplication(processIdentifier: pid) {
+                app.activate()
+            }
         }
     }
 }
