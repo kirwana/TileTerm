@@ -1,4 +1,5 @@
 import SwiftUI
+import ServiceManagement
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -6,12 +7,34 @@ struct SettingsView: View {
     @State private var customApps: [TerminalApp] = TerminalApp.loadCustom()
     @State private var newBundleID = ""
     @State private var newName = ""
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("TileTerm Settings")
                 .font(.title2)
                 .fontWeight(.semibold)
+
+            GroupBox("General") {
+                HStack {
+                    Text("Launch at Login")
+                    Spacer()
+                    Toggle("", isOn: $launchAtLogin)
+                        .toggleStyle(.switch)
+                        .onChange(of: launchAtLogin) { _, newValue in
+                            do {
+                                if newValue {
+                                    try SMAppService.mainApp.register()
+                                } else {
+                                    try SMAppService.mainApp.unregister()
+                                }
+                            } catch {
+                                launchAtLogin = SMAppService.mainApp.status == .enabled
+                            }
+                        }
+                }
+                .padding(8)
+            }
 
             GroupBox("Hotkey") {
                 HStack {
@@ -108,6 +131,6 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 480, height: 520)
+        .frame(width: 480, height: 680)
     }
 }
